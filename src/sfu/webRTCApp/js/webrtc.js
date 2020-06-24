@@ -918,7 +918,7 @@ async function publish(isWebcam)
 
         var offer = await pc1.createOffer();
 
-        console.log( "publish offer: %o", offer);
+        console.log( "PC1 offer made: %o", offer);
 
          await pc1.setLocalDescription(offer);
 

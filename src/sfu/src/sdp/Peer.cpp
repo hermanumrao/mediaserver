@@ -341,6 +341,7 @@ namespace SdpParse {
     
     void Peers::onSubscribe(std::string &room, std::string& participantID, const json& peerPartiID)
     {
+        bool ifexist= false;
         Peer *peer;
         if (mapPeers.find(participantID) != mapPeers.end()) {
             SInfo << "Peer already exist " << participantID ;
@@ -352,6 +353,7 @@ namespace SdpParse {
             peer->participantID = participantID;
             peer->participantName = participantID;
             mapPeers[participantID] = peer;
+            ifexist = true;
         }
 
 //        if(peerPartiID.empty())
@@ -385,7 +387,7 @@ namespace SdpParse {
                 
                 mapPeers[id]->onSubscribe(revvecProdPeer);
             }
-            
+            if(!ifexist)
             peer->onSubscribe(vecProdPeer);
         }
     }
