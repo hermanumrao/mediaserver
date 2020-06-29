@@ -253,16 +253,17 @@ namespace SdpParse {
         }
         mapSelfConumers.clear();
 
-        if(consumers)
-        {
-            delete consumers;
-            consumers = nullptr;
-        }
         
         if(producers)
         {
             delete producers;
             producers = nullptr;
+        }
+        
+        if(consumers)
+        {
+            delete consumers;
+            consumers = nullptr;
         }
     }
      

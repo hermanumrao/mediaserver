@@ -201,6 +201,7 @@ namespace SdpParse
         json &trans = Settings::configuration.producer_getStats;
         trans["internal"]["producerId"] = producerid; //uuid4::uuid();
         trans["method"] = "producer.close";
+         SInfo <<  " close_producer producerid " << producerid; 
         raiseRequest(param, trans, [&](const json & ack_resp)
         {
             //SInfo <<  " Deleted " << ack_resp;
@@ -215,43 +216,6 @@ namespace SdpParse
 
         int sizeofMid = peer->sdpObject["media"].size();
 
-        //        if(sizeofMid == mapProdMid.size()) 
-        //        {
-        //            
-        //            for (int i = 0; i < sizeofMid ; ++i) {
-        //
-        //              json& offerMediaObject = peer->sdpObject["media"][i];
-        //              std::string producerId = mapProdMid[i];  
-        //              std::string direction = offerMediaObject["direction"].get<std::string>();
-        //              if( direction == "inactive" &&  (mapProducer.find(producerId) !=  mapProducer.end()))
-        //              {
-        //                  std::string mid = offerMediaObject["mid"].get<std::string>();
-        //                  remoteSdp->CloseMediaSection(mid);
-        //                  std::string trackid = Sdp::Utils::extractTrackID(offerMediaObject);
-        //                  SInfo << "ProducerClose Mid " << mid << " Producer id "  << trackid;
-        //                          
-        //                  if( producerId != trackid)
-        //                  {
-        //                      SError<< "Producer Close Mid Error " << mid << " Producer id "  << trackid;
-        //                      exit(-1);
-        //                  }
-        //                  
-        //                  delete mapProducer[trackid];
-        //                  mapProducer.erase(trackid);
-        //                  
-        //                  close_producer(trackid);
-        //              
-        //              }
-        //                 
-        //            }
-        //            
-        //            auto answer = remoteSdp->GetSdp();
-        //            
-        //            //SInfo << " ans "  << answer;
-        //            cbAns(answer);
-        //                  
-        //            return;
-        //        }
 
         for (int i = 0; i < sizeofMid; ++i)
         {
@@ -291,15 +255,16 @@ namespace SdpParse
                     exit(-1);
                 }
 
-                for (auto & proCon : mapProducer[trackid]->mapProCon)
-                {
-                    proCon.first->close_consumer(trackid, proCon.second);
+                for (auto proCon = mapProducer[trackid]->mapProCon.begin(); proCon != mapProducer[trackid]->mapProCon.end(); ) {
+                    proCon->first->close_consumer(trackid, proCon->second);
+                    proCon = mapProducer[trackid]->mapProCon.erase(proCon); // note it will = next(it) after erase
+                    proCon->first->mapConsumer.erase(proCon->second);
                 }
 
                 delete mapProducer[trackid]; // track id is produer id
                 mapProducer.erase(trackid);
                 mapProdMid.erase(mid);
-                close_producer(trackid);
+              //  close_producer(trackid); below already producer close code exist
 
                 json param = json::array();
                 param.push_back("producer.close");
@@ -309,7 +274,6 @@ namespace SdpParse
                 trans["method"] = "producer.close";
                 raiseRequest(param, trans, [&](const json & ack_resp)
                 {
-
                     if (sizeofMid == i + 1)
                     {
                         auto answer = remoteSdp->GetSdp();
@@ -395,6 +359,7 @@ namespace SdpParse
                         {"kind", kind},
                         {"recvRtpCapabilities", peer->GetRtpCapabilities()}, //{"rtpParameters", sendingRtpParameters},
                         {"type", ack_resp["data"]["type"]},
+                         {"mid", std::to_string(mid)},
                         { "consumableRtpParameters", consumableRtpParameters}
                     };
 
@@ -458,29 +423,38 @@ namespace SdpParse
         SInfo << "~Producers()";
 
         std::unordered_set<Consumers*> setConsumer;
-                
-        for (auto &prod : mapProducer)
-        {
-            //  close_producer(prod.second->producer["producerId"] );
+        
 
-            for (auto & proCon : prod.second->mapProCon)
-            {
-                proCon.first->close_consumer(prod.first, proCon.second);
-                setConsumer.insert(proCon.first);
+        for (auto it = mapProducer.begin(); it != mapProducer.end(); ) {
+               
+            std::string producerid = it->first;
+            Producer * producer = it->second;
+            
+             for (auto proCon = producer->mapProCon.begin(); proCon != producer->mapProCon.end(); ) {
+       
+                std::string consumerID = proCon->second;
+                Consumers *consumers = proCon->first;
+                SInfo << "delete  ProducerID " <<  producerid << "  ConsumerID "   << consumerID;
+                consumers->close_consumer(producerid, consumerID);
+                setConsumer.insert(consumers);
+                proCon = producer->mapProCon.erase(proCon); // note it will = next(it) after erase
             }
 
-            delete mapProducer[prod.first]; // track id is produer id
-            mapProducer.erase(prod.first);
+           std::string mid = producer->producer["mid"].get<std::string>();
+
+           SInfo << "Close Mid: " << mid << " Producer ID: " << producerid << " Participant id " << peer->participantID;
+           remoteSdp->CloseMediaSection(mid);
+           mapProdMid.erase(std::stoi(mid));
             //mapProdMid.erase(mid);
-            close_producer(prod.first);
-
-
+            close_producer(producerid);
+            
+             
+           delete producer; // track id is produer id
+           it = mapProducer.erase(it); // note it will = next(it) after erase
 
             // delete prod.second;
         }
 
-        mapProducer.clear();
-        mapProdMid.clear();
 
         for(auto& con:setConsumer)
         {
@@ -627,22 +601,23 @@ namespace SdpParse
         trans["method"] = "consumer.close";
         trans["internal"]["producerId"] = producerid;
         trans["internal"]["consumerId"] = conumserid;
+        SInfo <<  " close_consumer id " << conumserid;
+        
+        
+         std::string mid = mapConsumer[conumserid ]->consumer["mid"].get<std::string>();
+
+         remoteSdp->CloseMediaSection(mid);
+            
+         mapConMid.erase(std::stoi(mid));
+
+         SInfo << "Close Mid: " << mid << " Conumer id: " << conumserid << " Producer ID: " << producerid << " Participant id " << peer->participantID;
+         delete mapConsumer[conumserid];
+
 
         raiseRequest(param, trans, [&](const json & ack_resp)
         {
-
-            std::string mid = mapConsumer[conumserid ]->consumer["mid"].get<std::string>();
-
-            SInfo << "Close Mid: " << mid << " Conumer id: " << conumserid << " Producer ID: " << producerid << " Participant id " << peer->participantID;
-
-            remoteSdp->CloseMediaSection(mid);
-
-            delete mapConsumer[conumserid ];
-            mapConsumer.erase(conumserid);
-
-
-
-
+            SInfo <<  " close_consumer ack " << ack_resp.dump(4);
+        
 
         });
     }
@@ -857,7 +832,7 @@ namespace SdpParse
     void Consumers::sendSDP(std::string &from) {
         if (remoteSdp->MediaSectionSize())
         {
-            SInfo << " Sendffer to particpant " << peer->participantID << " from particpant " << from << " tolal mid " << remoteSdp->MediaSectionSize();
+            SInfo << " Send offer to particpant " << peer->participantID << " from particpant " << from << " tolal mid " << remoteSdp->MediaSectionSize();
 
             auto offer = this->remoteSdp->GetSdp();
             // SInfo << "offer: " << offer;
@@ -906,14 +881,25 @@ namespace SdpParse
     }
 
     Consumers::~Consumers() {
-        for (auto &cons : mapConsumer)
-        {
-
-            close_consumer(cons.second->consumer["producerId"], cons.second->consumer["id"]);
-            delete cons.second;
-        }
-        mapConsumer.clear();
-        mapConMid.clear();
+        
+        
+        for (auto cons =mapConsumer.begin(); cons != mapConsumer.end(); ) {
+            
+            std::string consumerid  = cons->second->consumer["id"].get<std::string>();
+            std::string  producerId= cons->second->consumer["producerId"].get<std::string>();
+            close_consumer(producerId, consumerid); 
+            cons = mapConsumer.erase(cons);
+         }
+         
+//        for (auto &cons : mapConsumer)
+//        {
+//            std:string consumerid = cons.second->consumer["id"].get<std::string>();
+//            close_consumer(cons.second->consumer["producerId"], consumerid); 
+//            //delete cons.second; // already delted at close_consumer
+//        }
+        
+  //      mapConsumer.clear(); // reace conditon   // movdeed the code inside
+  //      mapConMid.clear(); // reace conditon 
     }
 
     void Consumers::setPreferredLayers(json &layer) {
