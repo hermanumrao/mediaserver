@@ -426,11 +426,12 @@ namespace SdpParse
         
 
         for (auto it = mapProducer.begin(); it != mapProducer.end(); ) {
+            
                
             std::string producerid = it->first;
             Producer * producer = it->second;
             
-             for (auto proCon = producer->mapProCon.begin(); proCon != producer->mapProCon.end(); ) {
+            for (auto proCon = producer->mapProCon.begin(); proCon != producer->mapProCon.end(); ) {
        
                 std::string consumerID = proCon->second;
                 Consumers *consumers = proCon->first;
@@ -440,17 +441,17 @@ namespace SdpParse
                 proCon = producer->mapProCon.erase(proCon); // note it will = next(it) after erase
             }
 
-           std::string mid = producer->producer["mid"].get<std::string>();
+            std::string mid = producer->producer["mid"].get<std::string>();
 
-           SInfo << "Close Mid: " << mid << " Producer ID: " << producerid << " Participant id " << peer->participantID;
-           remoteSdp->CloseMediaSection(mid);
-           mapProdMid.erase(std::stoi(mid));
+            SInfo << "Close Mid: " << mid << " Producer ID: " << producerid << " Participant id " << peer->participantID;
+            remoteSdp->CloseMediaSection(mid);
+            mapProdMid.erase(std::stoi(mid));
             //mapProdMid.erase(mid);
             close_producer(producerid);
             
              
-           delete producer; // track id is produer id
-           it = mapProducer.erase(it); // note it will = next(it) after erase
+            delete producer; // track id is produer id
+            it = mapProducer.erase(it); // note it will = next(it) after erase
 
             // delete prod.second;
         }
@@ -728,7 +729,8 @@ namespace SdpParse
                             {"mid", localId}
 
                         };
-
+                        
+                        c->producers = prodpeer->producers;
 
                         //SInfo <<  localId << " GetOffer " << c->consumer["id"] << " kind " << c->consumer["kind"];
                         mapConsumer[ c->consumer["id"]] = c;
@@ -887,7 +889,11 @@ namespace SdpParse
             
             std::string consumerid  = cons->second->consumer["id"].get<std::string>();
             std::string  producerId= cons->second->consumer["producerId"].get<std::string>();
-            close_consumer(producerId, consumerid); 
+            Producers *producers = cons->second->producers;
+            
+            close_consumer(producerId, consumerid);
+            producers->mapProducer[producerId]->mapProCon.erase(this);
+            
             cons = mapConsumer.erase(cons);
          }
          

@@ -125,6 +125,7 @@ namespace SdpParse {
         struct Consumer
         {  // std::string offer;
             nlohmann::json consumer;
+            Producers *producers;
         };
         std::map<int, std::string>  mapConMid;  // map mid with conusmer id
         std::unordered_map<std::string, Consumer*>  mapConsumer;  // map number of consumer Devices
