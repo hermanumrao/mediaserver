@@ -257,8 +257,9 @@ namespace SdpParse
 
                 for (auto proCon = mapProducer[trackid]->mapProCon.begin(); proCon != mapProducer[trackid]->mapProCon.end(); ) {
                     proCon->first->close_consumer(trackid, proCon->second);
-                    proCon = mapProducer[trackid]->mapProCon.erase(proCon); // note it will = next(it) after erase
+                    SInfo  <<  "Delete consumer id " << proCon->second;
                     proCon->first->mapConsumer.erase(proCon->second);
+                    proCon = mapProducer[trackid]->mapProCon.erase(proCon); // note it will = next(it) after erase
                 }
 
                 delete mapProducer[trackid]; // track id is produer id
@@ -439,6 +440,8 @@ namespace SdpParse
                 consumers->close_consumer(producerid, consumerID);
                 setConsumer.insert(consumers);
                 proCon = producer->mapProCon.erase(proCon); // note it will = next(it) after erase
+                SInfo  <<  "Delete consumer id " << consumerID;
+                consumers->mapConsumer.erase(consumerID);
             }
 
             std::string mid = producer->producer["mid"].get<std::string>();
@@ -617,7 +620,7 @@ namespace SdpParse
 
         raiseRequest(param, trans, [&](const json & ack_resp)
         {
-            SInfo <<  " close_consumer ack " << ack_resp.dump(4);
+           // SInfo <<  " close_consumer ack " << ack_resp.dump(4);
         
 
         });
@@ -884,18 +887,25 @@ namespace SdpParse
 
     Consumers::~Consumers() {
         
-        
+        int sz = mapConsumer.size();
         for (auto cons =mapConsumer.begin(); cons != mapConsumer.end(); ) {
             
+            
+             SInfo  <<  "Delete consumer id " << cons->first;
+             
             std::string consumerid  = cons->second->consumer["id"].get<std::string>();
             std::string  producerId= cons->second->consumer["producerId"].get<std::string>();
+            SInfo  <<  "Delete consumer id " << consumerid  << " producerId  "  << producerId;
+              
             Producers *producers = cons->second->producers;
-            
+         
             close_consumer(producerId, consumerid);
             producers->mapProducer[producerId]->mapProCon.erase(this);
             
             cons = mapConsumer.erase(cons);
          }
+        
+        mapConsumer.clear();
          
 //        for (auto &cons : mapConsumer)
 //        {
