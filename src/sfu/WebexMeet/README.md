@@ -48,9 +48,9 @@ MongoDB
   running project:
 
   Step 1: Install all dependencies by : npm install and run node app.js
-  Step 2: Sign up @ http://localhost:5000/user/signup
+  Step 2: Sign up @ http://localhost:8080/user/signup
   Step 3: Now you're good to go.
-  Step 4: Now Login  @http://localhost:5000/user/login
+  Step 4: Now Login  @http://localhost:8080/user/login
   Step 5: Now Chat with your friends real fast powered by socket.IO and Nodejs.
 
 ```

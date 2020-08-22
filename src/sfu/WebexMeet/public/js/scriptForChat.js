@@ -151,7 +151,7 @@ $ (function(){
   //receiving onlineStack.
   socket.on('onlineStack',function(stack){
     $('#list').empty();
-    $('#list').append($('<li>').append($('<span>Group</span>'),$('<button id="ubtn" class="btn btn-danger btn-xs"></button>').data("name","Group").text("chat"), $('<button id="ubtn" class="btn btn-danger btn-xs"></button>').data("name","Group").text("call"), $('<button id="ubtn" class="btn btn-danger btn-xs"></button>').data("name","Group").text("share")));
+    $('#list').append($('<li>').append($('<span id="chatgroup" >Group</span>'),$('<button id="ubtn" data-modal="ubtn" class="btn btn-danger btn-xs"></button>').data("name","Group").text("chat"), $('<button id="ubtn" class="btn btn-danger btn-xs"></button>').data("name","Group").text("call"), $('<button id="ubtn" class="btn btn-danger btn-xs"></button>').data("name","Group").text("share")));
     var totalOnline = 0;
     for (var user in stack){
       //setting txt1. shows users button.
@@ -159,34 +159,34 @@ $ (function(){
 
       var txt1 = $('<span></span>').text(user);
 
-      if(user == username){
-        var txt2 = $('<button class="btn btn-secondary btn-xs disabled"> </button>').text("chat");
-            //   var txt3 = $('<span class="badge"></span>').text(stack[user]).css({"float":"right","color":"#a6a6a6","font-size":"12px"});
-      }
-      else{
-        var txt2 = $('<button id="ubtn" class="btn btn-primary btn-xs" >').text("chat").data("name",user) ;
+      // if(user == username){
+      //   var txt2 = $('<button class="btn btn-secondary btn-xs disabled"> </button>').text("chat");
+      //       //   var txt3 = $('<span class="badge"></span>').text(stack[user]).css({"float":"right","color":"#a6a6a6","font-size":"12px"});
+      // }
+      // else{
+      //   var txt2 = $('<button id="ubtn" class="btn btn-primary btn-xs" >').text("chat").data("name",user) ;
 
-      }
-
-
-      if(user == username){
-        var txt3= $('<button class="btn btn-secondary btn-xs disabled"> </button>').text("call");
-        //   var txt3 = $('<span class="badge"></span>').text(stack[user]).css({"float":"right","color":"#a6a6a6","font-size":"12px"});
-      }
-      else{
-        var txt3 = $('<button id="ubtn" data-name=user class="btn btn-primary btn-xs" >').text("call").data("name",user)  ;
-
-      }
+      // }
 
 
-      if(user == username){
-        var txt4= $('<button class="btn btn-secondary btn-xs disabled"> </button>').text("share");
-        //   var txt3 = $('<span class="badge"></span>').text(stack[user]).css({"float":"right","color":"#a6a6a6","font-size":"12px"});
-      }
-      else{
-        var txt4 = $('<button id="ubtn" data-name=user class="btn btn-primary btn-xs" >').text("share").data("name",user)  ;
+      // if(user == username){
+      //   var txt3= $('<button class="btn btn-secondary btn-xs disabled"> </button>').text("call");
+      //   //   var txt3 = $('<span class="badge"></span>').text(stack[user]).css({"float":"right","color":"#a6a6a6","font-size":"12px"});
+      // }
+      // else{
+      //   var txt3 = $('<button id="ubtn" data-name=user class="btn btn-primary btn-xs" >').text("call").data("name",user)  ;
 
-      }
+      // }
+
+
+      // if(user == username){
+      //   var txt4= $('<button class="btn btn-secondary btn-xs disabled"> </button>').text("share");
+      //   //   var txt3 = $('<span class="badge"></span>').text(stack[user]).css({"float":"right","color":"#a6a6a6","font-size":"12px"});
+      // }
+      // else{
+      //   var txt4 = $('<button id="ubtn" data-name=user class="btn btn-primary btn-xs" >').text("share").data("name",user)  ;
+
+      // }
 
 
 
@@ -203,11 +203,17 @@ $ (function(){
 
 
       //listing all users.
-      $('#list').append($('<li>').append(txt1,txt2,txt3,txt4,txt5));
+     // $('#list').append($('<li>').append(txt1,txt2,txt3,txt4,txt5));
+      $('#list').append($('<li>').append(txt1,txt5));
       $('#totalOnline').text(totalOnline);
     }//end of for.
     $('#scrl1').scrollTop($('#scrl1').prop("scrollHeight"));
+
+     //var  ttt33 = $( "#chatgroup" ).first().next().html();
+     $( "#chatgroup" ).first().next().trigger('click');
+
   }); //end of receiving onlineStack event.
+
 
 
   //on button click function.
@@ -647,7 +653,24 @@ var _awaitQueue = new AwaitQueue({ ClosedErrorClass: InvalidStateError });
 socket.on('message',  async function(message) {
   console.log('Client received message:', message.type);
 
+  console.log('peerID:', peerID);
+
   if (message.type === 'offer') {
+
+
+     console.log('remotePeerid:', message.from);
+
+    if (confirm('Please answer the call')) {
+  // Save it!
+      console.log('accept offer');
+      $( "#chatgroup" ).first().next().next().trigger('click');
+      
+    } else {
+      // Do nothing!
+      console.log('Do not accept offer');
+      return;
+    }
+
 
       return _awaitQueue.push(
           async () =>  processOffer(message.from, message.desc  ));
